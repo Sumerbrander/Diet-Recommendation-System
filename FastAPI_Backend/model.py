@@ -8,7 +8,7 @@ from sklearn.preprocessing import FunctionTransformer
 
 def scaling(dataframe):
     scaler=StandardScaler()
-    prep_data=scaler.fit_transform(dataframe.iloc[:,6:15].to_numpy())
+    prep_data=scaler.fit_transform(dataframe.iloc[:,0:15].to_numpy())
     return prep_data,scaler
 
 def nn_predictor(prep_data):
@@ -29,7 +29,7 @@ def extract_data(dataframe,ingredients):
 def extract_ingredient_filtered_data(dataframe,ingredients):
     extracted_data=dataframe.copy()
     regex_string=''.join(map(lambda x:f'(?=.*{x})',ingredients))
-    extracted_data=extracted_data[extracted_data['RecipeIngredientParts'].str.contains(regex_string,regex=True,flags=re.IGNORECASE)]
+    extracted_data=extracted_data[extracted_data['Serving'].str.contains(regex_string,regex=True,flags=re.IGNORECASE)]
     return extracted_data
 
 def apply_pipeline(pipeline,_input,extracted_data):
@@ -57,8 +57,8 @@ def output_recommended_recipes(dataframe):
         output=dataframe.copy()
         output=output.to_dict("records")
         for recipe in output:
-            recipe['RecipeIngredientParts']=extract_quoted_strings(recipe['RecipeIngredientParts'])
-            recipe['RecipeInstructions']=extract_quoted_strings(recipe['RecipeInstructions'])
+            recipe['Serving']=extract_quoted_strings(recipe['Serving'])
+            recipe['Serving']=extract_quoted_strings(recipe['Serving'])
     else:
         output=None
     return output

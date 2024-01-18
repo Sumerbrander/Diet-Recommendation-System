@@ -21,21 +21,25 @@ class PredictionIn(BaseModel):
 
 
 class Recipe(BaseModel):
-    Name:str
-    CookTime:str
-    PrepTime:str
-    TotalTime:str
-    RecipeIngredientParts:list[str]
     Calories:float
-    FatContent:float
-    SaturatedFatContent:float
-    CholesterolContent:float
-    SodiumContent:float
-    CarbohydrateContent:float
-    FiberContent:float
-    SugarContent:float
-    ProteinContent:float
-    RecipeInstructions:list[str]
+    CaloriesfromFat:float
+    TotalFat:float
+    Sodium:float
+    Potassium:float
+    TotalCarbohydrate:float
+    DietaryFiber:float
+    Sugar:float
+    Protein:float
+    VitaminA:float
+    VitaminC:float
+    Calcium:float
+    Iron:float
+    SaturatedFat:float
+    Cholesterol:float
+    Food:object
+    Serving:object
+    FoodType:object
+   
 
 class PredictionOut(BaseModel):
     output: Optional[List[Recipe]] = None

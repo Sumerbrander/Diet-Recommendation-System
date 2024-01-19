@@ -5,7 +5,7 @@ import pandas as pd
 from streamlit_echarts import st_echarts
 
 st.set_page_config(page_title="Custom Food Recommendation", page_icon="🔍",layout="wide")
-nutrition_values=['Calories','FatContent','SaturatedFatContent','CholesterolContent','SodiumContent','CarbohydrateContent','FiberContent','SugarContent','ProteinContent']
+nutritions_values=['Calories','TotalFat','Sodium','Potassium','TotalCarbohydrate','DietaryFiber','Sugars','Protein','VitaminA', 'VitaminC', 'Calcium', 'Iron','SaturatedFat','Cholesterol']
 if 'generated' not in st.session_state:
     st.session_state.generated = False
     st.session_state.recommendations=None
@@ -38,7 +38,7 @@ class Display:
             for column,row in zip(st.columns(5),range(5)):
                 with column:
                     for recipe in recommendations[rows*row:rows*(row+1)]:                             
-                        recipe_name=recipe['Name']
+                        recipe_name=recipe['Food']
                         expander = st.expander(recipe_name)
                         recipe_link=recipe['image_link']
                         recipe_img=f'<div><center><img src={recipe_link} alt={recipe_name}></center></div>'     
@@ -48,7 +48,7 @@ class Display:
                         expander.markdown(f'<h5 style="text-align: center;font-family:sans-serif;">Nutritional Values (g):</h5>', unsafe_allow_html=True)                   
                         expander.dataframe(nutritions_df)
                         expander.markdown(f'<h5 style="text-align: center;font-family:sans-serif;">Ingredients:</h5>', unsafe_allow_html=True)
-                        for ingredient in recipe['RecipeIngredientParts']:
+                        for ingredient in recipe['Serving']:
                             expander.markdown(f"""
                                         - {ingredient}
                             """)
@@ -56,13 +56,7 @@ class Display:
                         for instruction in recipe['RecipeInstructions']:
                             expander.markdown(f"""
                                         - {instruction}
-                            """) 
-                        expander.markdown(f'<h5 style="text-align: center;font-family:sans-serif;">Cooking and Preparation Time:</h5>', unsafe_allow_html=True)   
-                        expander.markdown(f"""
-                                - Cook Time       : {recipe['CookTime']}min
-                                - Preparation Time: {recipe['PrepTime']}min
-                                - Total Time      : {recipe['TotalTime']}min
-                            """)                       
+                            """)                
         else:
             st.info('Couldn\'t find any recipes with the specified ingredients', icon="🙁")
     def display_overview(self,recommendations):
@@ -70,10 +64,10 @@ class Display:
             st.subheader('Overview:')
             col1,col2,col3=st.columns(3)
             with col2:
-                selected_recipe_name=st.selectbox('Select a recipe',[recipe['Name'] for recipe in recommendations])
+                selected_recipe_name=st.selectbox('Select a recipe',[recipe['Food'] for recipe in recommendations])
             st.markdown(f'<h5 style="text-align: center;font-family:sans-serif;">Nutritional Values:</h5>', unsafe_allow_html=True)
             for recipe in recommendations:
-                if recipe['Name']==selected_recipe_name:
+                if recipe['Food']==selected_recipe_name:
                     selected_recipe=recipe
             options = {
         "title": {"text": "Nutrition values", "subtext": f"{selected_recipe_name}", "left": "center"},
@@ -98,7 +92,7 @@ class Display:
             st_echarts(options=options, height="600px",)
             st.caption('You can select/deselect an item (nutrition value) from the legend.')
 
-title="<h1 style='text-align: center;'>Custom Food Recommendation</h1>"
+title="<h1 style='text-align: center;'>Custom Fruit Recommendation</h1>"
 st.markdown(title, unsafe_allow_html=True)
 
 
@@ -107,19 +101,25 @@ display=Display()
 with st.form("recommendation_form"):
     st.header('Nutritional values:')
     Calories = st.slider('Calories', 0, 2000, 500)
-    FatContent = st.slider('FatContent', 0, 100, 50)
-    SaturatedFatContent = st.slider('SaturatedFatContent', 0, 13, 0)
-    CholesterolContent = st.slider('CholesterolContent', 0, 300, 0)
-    SodiumContent = st.slider('SodiumContent', 0, 2300, 400)
-    CarbohydrateContent = st.slider('CarbohydrateContent', 0, 325, 100)
-    FiberContent = st.slider('FiberContent', 0, 50, 10)
-    SugarContent = st.slider('SugarContent', 0, 40, 10)
-    ProteinContent = st.slider('ProteinContent', 0, 40, 10)
-    nutritions_values_list=[Calories,FatContent,SaturatedFatContent,CholesterolContent,SodiumContent,CarbohydrateContent,FiberContent,SugarContent,ProteinContent]
+    TotalFat = st.slider('Fat', 0, 100, 50)
+   
+    Sodium = st.slider('Sodium', 0, 100, 20)
+    Potassium = st.slider('Potassium', 0, 4000, 800)
+    TotalCarbohydrate = st.slider('TotalCarbohydrate', 0, 200, 20)
+    DietaryFiber = st.slider('DietaryFiber', 0, 50, 10)
+    Sugars = st.slider('Sugars', 0, 40, 10)
+    Protein = st.slider('Protein', 0, 40, 10)
+    VitaminA = st.slider('VitaminA', 0, 200, 20)
+    VitaminC = st.slider('VitaminC', 5, 500, 50)
+    Calcium = st.slider('Calcium', 0, 40, 10)
+    Iron = st.slider('Iron', 0, 40, 10)
+    SaturatedFat = st.slider('SaturatedFat', 0, 15, 3)
+    Cholesterol = st.slider('Cholesterol', 0, 30, 5)
+    nutritions_values_list=[Calories, TotalFat, Sodium, Potassium, TotalCarbohydrate, DietaryFiber, Sugars, Protein, VitaminA, VitaminC, Calcium, Iron, SaturatedFat, Cholesterol]
     st.header('Recommendation options (OPTIONAL):')
     nb_recommendations = st.slider('Number of recommendations', 5, 20,step=5)
-    ingredient_txt=st.text_input('Specify ingredients to include in the recommendations separated by ";" :',placeholder='Ingredient1;Ingredient2;...')
-    st.caption('Example: Milk;eggs;butter;chicken...')
+    ingredient_txt=st.text_input('Specify servings to include in the recommendations separated by ";" :',placeholder='Ingredient1;Ingredient2;...')
+    st.caption('Example: lettuce;beans;1/3 medium;1/6 medium head...')
     generated = st.form_submit_button("Generate")
 if generated:
     with st.spinner('Generating recommendations...'): 

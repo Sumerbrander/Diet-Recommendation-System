@@ -5,11 +5,11 @@ from random import uniform as rnd
 from ImageFinder.ImageFinder import get_images_links as find_image
 from streamlit_echarts import st_echarts
 
-st.set_page_config(page_title="Automatic Diet Recommendation", page_icon="💪",layout="wide")
+st.set_page_config(page_title="Automatic Fruit Recommendation", page_icon="💪",layout="wide")
 
 
 
-nutritions_values=['Calories','FatContent','SaturatedFatContent','CholesterolContent','SodiumContent','CarbohydrateContent','FiberContent','SugarContent','ProteinContent']
+nutritions_values=['Calories','TotalFat','Sodium','Potassium','TotalCarbohydrate','DietaryFiber','Sugars','Protein','VitaminA', 'VitaminC', 'Calcium', 'Iron','SaturatedFat','Cholesterol']
 # Streamlit states initialization
 if 'person' not in st.session_state:
     st.session_state.generated = False
@@ -61,26 +61,102 @@ class Person:
         maintain_calories = self.calculate_bmr()*weight
         return maintain_calories
 
-    def generate_recommendations(self,):
-        total_calories=self.weight_loss*self.calories_calculator()
-        recommendations=[]
+import random
+
+class RecommendationSystem:
+    def __init__(self, weight_loss, meals_calories_perc):
+        self.weight_loss = weight_loss
+        self.meals_calories_perc = meals_calories_perc
+
+    def rnd(self, low, high):
+        return round(random.uniform(low, high), 2)
+
+    def generate_recommendations(self, dietary_goals, health_restrictions, taste_preferences):
+        total_calories = self.weight_loss * self.calories_calculator()
+        recommendations = []
+
         for meal in self.meals_calories_perc:
-            meal_calories=self.meals_calories_perc[meal]*total_calories
-            if meal=='breakfast':        
-                recommended_nutrition = [meal_calories,rnd(10,30),rnd(0,4),rnd(0,30),rnd(0,400),rnd(40,75),rnd(4,10),rnd(0,10),rnd(30,100)]
-            elif meal=='launch':
-                recommended_nutrition = [meal_calories,rnd(20,40),rnd(0,4),rnd(0,30),rnd(0,400),rnd(40,75),rnd(4,20),rnd(0,10),rnd(50,175)]
-            elif meal=='dinner':
-                recommended_nutrition = [meal_calories,rnd(20,40),rnd(0,4),rnd(0,30),rnd(0,400),rnd(40,75),rnd(4,20),rnd(0,10),rnd(50,175)] 
-            else:
-                recommended_nutrition = [meal_calories,rnd(10,30),rnd(0,4),rnd(0,30),rnd(0,400),rnd(40,75),rnd(4,10),rnd(0,10),rnd(30,100)]
-            generator=Generator(recommended_nutrition)
-            recommended_recipes=generator.generate().json()['output']
-            recommendations.append(recommended_recipes)
+            meal_calories = self.meals_calories_perc[meal] * total_calories
+            recommended_nutrition = self.generate_nutrition_profile(
+                meal_calories, dietary_goals, health_restrictions
+            )
+
+            generator = Generator(recommended_nutrition)
+            recommended_recipes = generator.generate().json()["output"]
+
+            filtered_recommendations = self.filter_recipes_by_taste(
+                recommended_recipes, taste_preferences
+            )
+            recommendations.append(filtered_recommendations)
+
         for recommendation in recommendations:
             for recipe in recommendation:
-                recipe['image_link']=find_image(recipe['Name']) 
+                recipe["image_link"] = find_image(recipe["Name"])
+
         return recommendations
+
+    def generate_nutrition_profile(
+        self, meal_calories, dietary_goals, health_restrictions
+    ):
+        if dietary_goals == "weight_loss":
+            # Adjust nutritional requirements for weight loss
+            protein_range = (rnd(1.8, 2.0) * meal_calories) / 4
+            carb_range = (rnd(1.45, 3.65) * meal_calories) / 4
+            fat_range = (rnd(0.2, 0.35) * meal_calories) / 9
+        else:
+            # Default nutritional requirements
+            protein_range = rnd(1.8, 2.25) * meal_calories / 4
+            carb_range = rnd(3.65, 5.65) * meal_calories / 4
+            fat_range = rnd(0.2, 0.35) * meal_calories / 9
+
+        # Other nutritional requirements
+        sodium_range = rnd(0, 100)
+        potassium_range = rnd(40, 500)
+        dietaryfiber_range = rnd(4, 20)
+        sugar_range = rnd(0, 10)
+        vitamin_c_range = rnd(15, 200)
+        vitamin_a_range = rnd(5, 80)
+        calcium_range = rnd(2, 8)
+        iron_range = rnd(2, 8)
+
+        # Adjust nutritional requirements based on health restrictions
+        if health_restrictions == "low_sodium":
+            sodium_range = rnd(0, 100)
+        # Add more health restrictions as needed
+        if health_restrictions == "low_potassium":
+            potassium_range = rnd(40, 500)
+        if health_restrictions == "low_vitamin_c":
+            vitamin_c_range = rnd(15, 200)
+        if health_restrictions == "low_vitamin_a":
+            vitamin_a_range = rnd(5, 80)     
+
+        
+        return [
+            meal_calories,
+            protein_range,
+            fat_range,
+            sodium_range,
+            potassium_range,
+            carb_range,
+            fiber_range,
+            sugar_range,
+            vitamin_c_range,
+            vitamin_a_range,
+            calcium_range,
+            iron_range,
+        ]
+
+    def filter_recipes_by_taste(self, recommended_recipes, taste_preferences):
+        filtered_recipes = []
+        for recipe in recommended_recipes:
+            if (
+                "ingredients" in recipe
+                and all(ingredient in taste_preferences["likes"] for ingredient in recipe["ingredients"])
+                and not any(ingredient in taste_preferences["dislikes"] for ingredient in recipe["ingredients"])
+            ):
+                filtered_recipes.append(recipe)
+        return filtered_recipes
+
 
 class Display:
     def __init__(self):
@@ -109,7 +185,7 @@ class Display:
                 st.metric(label=plan,value=f'{round(maintain_calories*weight)} Calories/day',delta=loss,delta_color="inverse")
 
     def display_recommendation(self,person,recommendations):
-        st.header('DIET RECOMMENDATOR')  
+        st.header('FRUIT RECOMMENDATOR')  
         with st.spinner('Generating recommendations...'): 
             meals=person.meals_calories_perc
             st.subheader('Recommended recipes:')
@@ -119,7 +195,7 @@ class Display:
                     st.markdown(f'##### {meal_name.upper()}')    
                     for recipe in recommendation:
                         
-                        recipe_name=recipe['Name']
+                        recipe_name=recipe['Food']
                         expander = st.expander(recipe_name)
                         recipe_link=recipe['image_link']
                         recipe_img=f'<div><center><img src={recipe_link} alt={recipe_name}></center></div>'     
@@ -133,60 +209,49 @@ class Display:
                             expander.markdown(f"""
                                         - {ingredient}
                             """)
-                        expander.markdown(f'<h5 style="text-align: center;font-family:sans-serif;">Recipe Instructions:</h5>', unsafe_allow_html=True)    
-                        for instruction in recipe['RecipeInstructions']:
+                        expander.markdown(f'<h5 style="text-align: center;font-family:sans-serif;">Servings:</h5>', unsafe_allow_html=True)    
+                        for instruction in recipe['Serving']:
                             expander.markdown(f"""
                                         - {instruction}
                             """) 
-                        expander.markdown(f'<h5 style="text-align: center;font-family:sans-serif;">Cooking and Preparation Time:</h5>', unsafe_allow_html=True)   
-                        expander.markdown(f"""
-                                - Cook Time       : {recipe['CookTime']}min
-                                - Preparation Time: {recipe['PrepTime']}min
-                                - Total Time      : {recipe['TotalTime']}min
-                            """)                       
+                                        
 
     def display_meal_choices(self,person,recommendations):    
         st.subheader('Choose your meal composition:')
         # Display meal compositions choices
         if len(recommendations)==3:
-            breakfast_column,launch_column,dinner_column=st.columns(3)
+            breakfast_column,lunch_column,dinner_column=st.columns(3)
             with breakfast_column:
-                breakfast_choice=st.selectbox(f'Choose your breakfast:',[recipe['Name'] for recipe in recommendations[0]])
-            with launch_column:
-                launch_choice=st.selectbox(f'Choose your launch:',[recipe['Name'] for recipe in recommendations[1]])
+                breakfast_choice=st.selectbox(f'Choose your breakfast:',[recipe['Food'] for recipe in recommendations[0]])
+            with lunch_column:
+                lunch_choice=st.selectbox(f'Choose your lunch:',[recipe['Food'] for recipe in recommendations[1]])
             with dinner_column:
-                dinner_choice=st.selectbox(f'Choose your dinner:',[recipe['Name'] for recipe in recommendations[2]])  
-            choices=[breakfast_choice,launch_choice,dinner_choice]     
+                dinner_choice=st.selectbox(f'Choose your dinner:',[recipe['Food'] for recipe in recommendations[2]])  
+            choices=[breakfast_choice,lunch_choice,dinner_choice]     
         elif len(recommendations)==4:
-            breakfast_column,morning_snack,launch_column,dinner_column=st.columns(4)
+            breakfast_column,morning_snack,lunch_column,dinner_column=st.columns(4)
             with breakfast_column:
-                breakfast_choice=st.selectbox(f'Choose your breakfast:',[recipe['Name'] for recipe in recommendations[0]])
-            with morning_snack:
-                morning_snack=st.selectbox(f'Choose your morning_snack:',[recipe['Name'] for recipe in recommendations[1]])
-            with launch_column:
-                launch_choice=st.selectbox(f'Choose your launch:',[recipe['Name'] for recipe in recommendations[2]])
+                breakfast_choice=st.selectbox(f'Choose your breakfast:',[recipe['Food'] for recipe in recommendations[0]])
+            with lunch_column:
+                lunch_choice=st.selectbox(f'Choose your lunch:',[recipe['Food'] for recipe in recommendations[2]])
             with dinner_column:
-                dinner_choice=st.selectbox(f'Choose your dinner:',[recipe['Name'] for recipe in recommendations[3]])
-            choices=[breakfast_choice,morning_snack,launch_choice,dinner_choice]                
+                dinner_choice=st.selectbox(f'Choose your dinner:',[recipe['Food'] for recipe in recommendations[3]])
+            choices=[breakfast_choice,lunch_choice,dinner_choice]                
         else:
-            breakfast_column,morning_snack,launch_column,afternoon_snack,dinner_column=st.columns(5)
+            breakfast_column,lunch_column,dinner_column=st.columns(5)
             with breakfast_column:
-                breakfast_choice=st.selectbox(f'Choose your breakfast:',[recipe['Name'] for recipe in recommendations[0]])
-            with morning_snack:
-                morning_snack=st.selectbox(f'Choose your morning_snack:',[recipe['Name'] for recipe in recommendations[1]])
-            with launch_column:
-                launch_choice=st.selectbox(f'Choose your launch:',[recipe['Name'] for recipe in recommendations[2]])
-            with afternoon_snack:
-                afternoon_snack=st.selectbox(f'Choose your afternoon:',[recipe['Name'] for recipe in recommendations[3]])
+                breakfast_choice=st.selectbox(f'Choose your breakfast:',[recipe['Food'] for recipe in recommendations[0]]
+            with lunch_column:
+                lunch_choice=st.selectbox(f'Choose your lunch:',[recipe['Food'] for recipe in recommendations[2]])
             with dinner_column:
-                dinner_choice=st.selectbox(f'Choose your  dinner:',[recipe['Name'] for recipe in recommendations[4]])
-            choices=[breakfast_choice,morning_snack,launch_choice,afternoon_snack,dinner_choice] 
+                dinner_choice=st.selectbox(f'Choose your  dinner:',[recipe['Food'] for recipe in recommendations[4]])
+            choices=[breakfast_choice,launch_choice,dinner_choice] 
         
         # Calculating the sum of nutritional values of the choosen recipes
         total_nutrition_values={nutrition_value:0 for nutrition_value in nutritions_values}
         for choice,meals_ in zip(choices,recommendations):
             for meal in meals_:
-                if meal['Name']==choice:
+                if meal['Food']==choice:
                     for nutrition_value in nutritions_values:
                         total_nutrition_values[nutrition_value]+=meal[nutrition_value]
   
@@ -240,7 +305,7 @@ class Display:
         
 
 display=Display()
-title="<h1 style='text-align: center;'>Automatic Diet Recommendation</h1>"
+title="<h1 style='text-align: center;'>Automatic Fruit Recommendation</h1>"
 st.markdown(title, unsafe_allow_html=True)
 with st.form("recommendation_form"):
     st.write("Modify the values and click the Generate button to use")

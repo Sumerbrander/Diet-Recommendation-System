@@ -28,7 +28,7 @@ class Recipe(BaseModel):
     Potassium:float
     TotalCarbohydrate:float
     DietaryFiber:float
-    Sugar:float
+    Sugars:float
     Protein:float
     VitaminA:float
     VitaminC:float
